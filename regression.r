@@ -21,6 +21,7 @@ SHELL <- subset(company_data, Company=="SHELL", select=Company:Month)
 #Runthrough of Regression with specific company -> Set targetco = COMPANY_NEEDED
 targetco <- WALMART
 
+
 #add regions
 region_names <- names(region_data)
 if (TWO_DIGIT_DATA){
@@ -33,52 +34,31 @@ targetco <-merge(targetco, region_data, by='Zip.Prefix')
 #now...there will be quite a few records with "!NA!" in the region.  These are regions that are not matched to a US State, including army bases, us territories, etc.
 #the data to match zips to state was collected from the USPS zipcode database
 targetco <- targetco[targetco$Region != '!NA!', ]
+
 #create dummies for region
+weekDummy <- model.matrix(~factor(targetco$WeekNum))
+regionDummy <- model.matrix(~factor(targetco$Region))
 
-regionFactor <- factor(targetco$Region)
-regionDummy <- model.matrix(~regionFactor)
 
-#Create squared terms for region
+#Create interaction terms
 regionPrecip <- regionDummy * targetco$Precip
 regionTemp <- regionDummy * targetco$Temp
+onlineBySearch <- targetco$Non.Physical.Sales*targetco$GoogTrend
+onlineBySearchLagged <- targetco$Non.Physical.Sales*targetco$GoogTrendM1
 
-#Create dummies for Month
-ByMonth <- factor(targetco$Month)
-monthDummy <- model.matrix(~ByMonth)
+#Create squared terms
+tempSquared <- targetco$Temp*targetco$Temp
 
-#remove intercept column
-
-#Create Dummy Variables bucketing into Regions
-#Zip <- factor(targetco$Zip.Prefix)
-#zipdummy <- model.matrix(~Zip)
-
-#Create Dummy Variables for each integer of Temp
-#Temps <- factor(as.integer(targetco$Temp/10))
-#tempdummy <- model.matrix(~Temps)
-
-#Create Dummy Variables for month
-
-
-#Create a Squared Temperature
-tempsquared <- targetco$Temp*targetco$Temp
-
-#Interactives
-#tempbyregion <- targetco$Temperature*targetco$Region
-#precipbyregion <- targetco$Precipitation*targetco$Region
-onlinebysearch <- targetco$Non.Physical.Sales*targetco$GoogTrend
-onlinebylagged <- targetco$Non.Physical.Sales*targetco$GoogTrendM1
-
-#Regression time - NEED TO ADD REGION, temp*region, precip*region
 regress = lm(targetco$Sales~ targetco$Temp + 
-               tempsquared + 
+               tempSquared + 
                targetco$Precip + 
                targetco$Non.Physical.Sales +
-               monthDummy +
+               weekDummy +
                targetco$Gprice +
                targetco$GoogTrend + 
                targetco$GoogTrendM1 + 
-               onlinebysearch +
-               onlinebylagged) +
+               onlineBySearch +
+               onlineBySearchLagged +
                regionDummy + 
                regionTemp + 
                regionPrecip
