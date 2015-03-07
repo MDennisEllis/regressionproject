@@ -1,23 +1,52 @@
-company_data <- read.csv("prefix2.csv")
-attach(company_data)
+TWO_DIGIT_DATA <- T;
+if (TWO_DIGIT_DATA){
+  company_data <- read.csv("prefix2.csv")  
+} else {
+  company_data <- read.csv("prefix3.csv")  
+}
+
+region_data <- read.csv("zip_code_regions.csv")
+TWO_DIGIT_DATA <- T;
 
 #Segment the Data
+#TODO: CREATE HOLDOUTS
 APPLE <- subset(company_data, Company=="APPLE", select=Company:Month)
-#NEED TO CREATE HOLDOUTS
 BESTBUY <- subset(company_data, Company=="BEST BUY", select=Company:Month)
-H&M <- subset(company_data, Company=="H&M", select=Company:Month)
+H_AND_M <- subset(company_data, Company=="H&M", select=Company:Month)
 WALMART <- subset(company_data, Company=="WALMART", select=Company:Month)
 PETCO <- subset(company_data, Company=="PETCO", select=Company:Month)
 MCDONALDS <- subset(company_data, Company=="MCDONALD'S", select=Company:Month)
 SHELL <- subset(company_data, Company=="SHELL", select=Company:Month)
 
-
 #Runthrough of Regression with specific company -> Set targetco = COMPANY_NEEDED
 targetco <- WALMART
 
+#add regions
+region_names <- names(region_data)
+if (TWO_DIGIT_DATA){
+  region_names[region_names == "zip_first_two_digits"] <- "Zip.Prefix"
+} else {
+  region_names[region_names == "zip_first_three_digits"] <- "Zip.Prefix"
+}
+names(region_data) <- region_names
+targetco <-merge(targetco, region_data, by='Zip.Prefix')
+#now...there will be quite a few records with "!NA!" in the region.  These are regions that are not matched to a US State, including army bases, us territories, etc.
+#the data to match zips to state was collected from the USPS zipcode database
+targetco <- targetco[targetco$Region != '!NA!', ]
+#create dummies for region
+
+regionFactor <- factor(targetco$Region)
+regionDummy <- model.matrix(~regionFactor)
+
+#Create squared terms for region
+regionPrecip <- regionDummy * targetco$Precip
+regionTemp <- regionDummy * targetco$Temp
+
 #Create dummies for Month
 ByMonth <- factor(targetco$Month)
-Monthdummy <- model.matrix(~ByMonth)
+monthDummy <- model.matrix(~ByMonth)
+
+#remove intercept column
 
 #Create Dummy Variables bucketing into Regions
 #Zip <- factor(targetco$Zip.Prefix)
@@ -44,12 +73,15 @@ regress = lm(targetco$Sales~ targetco$Temp +
                tempsquared + 
                targetco$Precip + 
                targetco$Non.Physical.Sales +
-               Monthdummy +
+               monthDummy +
                targetco$Gprice +
                targetco$GoogTrend + 
                targetco$GoogTrendM1 + 
                onlinebysearch +
-               onlinebylagged
+               onlinebylagged) +
+               regionDummy + 
+               regionTemp + 
+               regionPrecip
 )
 summary(regress)
 plot(regress$residuals)
