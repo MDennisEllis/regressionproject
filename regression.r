@@ -1,4 +1,4 @@
-TWO_DIGIT_DATA <- T;
+TWO_DIGIT_DATA <- F;
 if (TWO_DIGIT_DATA){
   company_data <- read.csv("prefix2.csv")  
 } else {
@@ -6,7 +6,7 @@ if (TWO_DIGIT_DATA){
 }
 
 region_data <- read.csv("zip_code_regions.csv")
-TWO_DIGIT_DATA <- T;
+TWO_DIGIT_DATA <- F;
 
 #Segment the Data
 #TODO: CREATE HOLDOUTS
@@ -19,7 +19,7 @@ MCDONALDS <- subset(company_data, Company=="MCDONALD'S", select=Company:Month)
 SHELL <- subset(company_data, Company=="SHELL", select=Company:Month)
 
 #Runthrough of Regression with specific company -> Set targetco = COMPANY_NEEDED
-targetco <- WALMART
+targetco <- BESTBUY
 
 
 #add regions
@@ -37,6 +37,7 @@ targetco <- targetco[targetco$Region != '!NA!', ]
 
 #create dummies for region
 weekDummy <- model.matrix(~factor(targetco$WeekNum))
+monthDummy <- model.matrix(~factor(targetco$Month))
 regionDummy <- model.matrix(~factor(targetco$Region))
 
 
@@ -53,7 +54,7 @@ regress = lm(targetco$Sales~ targetco$Temp +
                tempSquared + 
                targetco$Precip + 
                targetco$Non.Physical.Sales +
-               weekDummy +
+               monthDummy +
                targetco$Gprice +
                targetco$GoogTrend + 
                targetco$GoogTrendM1 + 
@@ -64,7 +65,6 @@ regress = lm(targetco$Sales~ targetco$Temp +
                regionPrecip
 )
 summary(regress)
-plot(regress$residuals)
 
 #Graphing
-plot(targetco$Temp, targetco$Non.Physical.Sales)
+plot(targetco$Month, targetco$Sales)
