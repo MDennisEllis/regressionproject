@@ -3,16 +3,7 @@ setwd(currentDirectory)
 company_data <- read.csv("prefix3.csv")  
 
 #Segment the Data
-#TODO: CREATE HOLDOUTS
 companies = c("APPLE", "BEST BUY", "H&M", "WALMART", "PETCO", "MCDONALD'S", "SHELL")
-
-APPLE <- subset(company_data, Company=="APPLE")
-BESTBUY <- subset(company_data, Company=="BEST BUY")
-H_AND_M <- subset(company_data, Company=="H&M")
-WALMART <- subset(company_data, Company=="WALMART")
-PETCO <- subset(company_data, Company=="PETCO")
-MCDONALDS <- subset(company_data, Company=="MCDONALD'S")
-SHELL <- subset(company_data, Company=="SHELL")
 
 for (company in companies){
   #Runthrough of Regression with specific company -> Set targetcoSample = COMPANY_NEEDED
