@@ -9,8 +9,8 @@ for (company in companies){
   #run the regression on each company
   targetco <- subset(company_data, Company==company)
   
-  #filter out any '!NA!' results.  These can be caused by sales in zipcodes corresponding to military bases, territories, etc
-  targetco <- targetco[targetco$Region != "!NA!",]
+  #filter out any rows with incomplete data.  This happens occasionally for some records
+  targetco = targetcoHoldout[complete.cases(targetcoHoldout$predictedSales),]
   
   #create sample set and holdout set.  Set the rand seed so the test is repeatable.
   set.seed(8675309)
@@ -95,14 +95,13 @@ for (company in companies){
   #Test the holdout sample
   targetcoHoldout$predictedSales = regress$coefficients["(Intercept)"]
   
+  #go through each coefficient.  If it's not NA, then multiply the coefficient by all the values of that variable
   regressCoeffs <- names(regress$coefficients)[2:length(names(regress$coefficients))]  
   for (coeff in regressCoeffs){  
     betaVal <- 1*regress$coefficients[coeff]
     varname <- unlist(strsplit(coeff, "$", fixed=TRUE))[2]  
     if (!is.na(betaVal)){     
       targetcoHoldout$predictedSales = targetcoHoldout$predictedSales+ targetcoHoldout[,varname]* regress$coefficients[coeff]   
-    } else {
-      print(paste("Cannot get value for ", coeff))
     }
   }
 
