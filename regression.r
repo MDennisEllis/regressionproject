@@ -7,14 +7,14 @@ companies = c("APPLE", "BEST BUY", "H&M", "WALMART", "PETCO", "MCDONALD'S", "SHE
 
 for (company in companies){
   #run the regression on each company
-  targetco <- subset(company_data, Company=="APPLE")
+  targetco <- subset(company_data, Company==company)
   
   #filter out any '!NA!' results.  These can be caused by sales in zipcodes corresponding to military bases, territories, etc
   targetco <- targetco[targetco$Region != "!NA!",]
   
   #create sample set and holdout set.  Set the rand seed so the test is repeatable.
   set.seed(8675309)
-  tSize <- 0.10 #arbitrary, but 10% seems about right
+  holdoutSize <- 0.10 #arbitrary, but 10% seems about right
   totalSize <- nrow(targetco)
   draw <- sample(1:totalSize)
   targetcoHoldout <- targetco[draw < (totalSize * holdoutSize),]
