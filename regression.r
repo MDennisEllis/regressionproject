@@ -7,14 +7,14 @@ companies = c("APPLE", "BEST BUY", "H&M", "WALMART", "PETCO", "MCDONALD'S", "SHE
 
 for (company in companies){
   #run the regression on each company
-  targetco <- subset(company_data, Company==company)
+  targetco <- subset(company_data, Company=="APPLE")
   
   #filter out any '!NA!' results.  These can be caused by sales in zipcodes corresponding to military bases, territories, etc
   targetco <- targetco[targetco$Region != "!NA!",]
   
   #create sample set and holdout set.  Set the rand seed so the test is repeatable.
   set.seed(8675309)
-  holdoutSize <- 0.10 #arbitrary, but 10% seems about right
+  tSize <- 0.10 #arbitrary, but 10% seems about right
   totalSize <- nrow(targetco)
   draw <- sample(1:totalSize)
   targetcoHoldout <- targetco[draw < (totalSize * holdoutSize),]
@@ -44,28 +44,20 @@ for (company in companies){
     targetcoSample[varname] = 1 * (targetcoSample$Month == month)  
     targetcoHoldout[varname] = 1 * (targetcoHoldout$Month == month)
   }
-  
-  #Create add'l interaction terms
-  targetcoSample$onlineBySearch <- targetcoSample$Non.Physical.Sales*targetcoSample$GoogTrend
-  targetcoSample$onlineBySearchLagged <- targetcoSample$Non.Physical.Sales*targetcoSample$GoogTrendM1
-  
-  targetcoHoldout$onlineBySearch <- targetcoHoldout$Non.Physical.Sales*targetcoHoldout$GoogTrend
-  targetcoHoldout$onlineBySearchLagged <- targetcoHoldout$Non.Physical.Sales*targetcoHoldout$GoogTrendM1
-  
-  
+    
   #Create squared terms
   targetcoSample$tempSquared <- targetcoSample$Temp*targetcoSample$Temp
   targetcoHoldout$tempSquared <- targetcoHoldout$Temp*targetcoHoldout$Temp
-  
-  regress = lm(targetcoSample$Sales~ targetcoSample$Temp + 
+
+  #N is the number of Yodlee users in that sample
+  regress = lm(targetcoSample$Sales~ targetcoSample$N +
+                 targetcoSample$Temp + 
                  targetcoSample$tempSquared + 
-                 targetcoSample$onlineBySearch +
-                 targetcoSample$onlineBySearchLagged + 
                  targetcoSample$Precip + 
                  targetcoSample$Non.Physical.Sales +
                  targetcoSample$Gprice +
                  targetcoSample$GoogTrend + 
-                 targetcoSample$GoogTrendM1 + 
+                 targetcoSample$GoogTrendM1 +
                  targetcoSample$month_2_dummy +
                  targetcoSample$month_3_dummy +
                  targetcoSample$month_4_dummy +
@@ -100,45 +92,20 @@ for (company in companies){
   print("**************************************")
   print(summary(regress))
   
+  #Test the holdout sample
+  targetcoHoldout$predictedSales = regress$coefficients["(Intercept)"]
   
-  targetcoHoldout$predictedSales = 
-    regress$coefficients["targetcoSample$tempSquared"] * targetcoHoldout$tempSquared+
-    regress$coefficients["targetcoSample$onlineBySearch"] * targetcoHoldout$onlineBySearch+
-    regress$coefficients["targetcoSample$onlineBySearchLagged"] * targetcoHoldout$onlineBySearchLagged+
-    regress$coefficients["targetcoSample$Precip"] * targetcoHoldout$Precip+
-    regress$coefficients["targetcoSample$Non.Physical.Sales"] * targetcoHoldout$Non.Physical.Sales+
-    regress$coefficients["targetcoSample$Gprice"] * targetcoHoldout$Gprice+
-    regress$coefficients["targetcoSample$GoogTrend"] * targetcoHoldout$GoogTrend+
-    regress$coefficients["targetcoSample$GoogTrendM1"] * targetcoHoldout$GoogTrendM1+
-    regress$coefficients["targetcoSample$month_2_dummy"] * targetcoHoldout$month_2_dummy+
-    regress$coefficients["targetcoSample$month_3_dummy"] * targetcoHoldout$month_3_dummy+
-    regress$coefficients["targetcoSample$month_4_dummy"] * targetcoHoldout$month_4_dummy+
-    regress$coefficients["targetcoSample$month_5_dummy"] * targetcoHoldout$month_5_dummy+
-    regress$coefficients["targetcoSample$month_6_dummy"] * targetcoHoldout$month_6_dummy+
-    regress$coefficients["targetcoSample$month_7_dummy"] * targetcoHoldout$month_7_dummy+
-    regress$coefficients["targetcoSample$month_8_dummy"] * targetcoHoldout$month_8_dummy+
-    regress$coefficients["targetcoSample$month_9_dummy"] * targetcoHoldout$month_9_dummy+
-    regress$coefficients["targetcoSample$month_10_dummy"] * targetcoHoldout$month_10_dummy+
-    regress$coefficients["targetcoSample$month_11_dummy"] * targetcoHoldout$month_11_dummy+
-    regress$coefficients["targetcoSample$month_12_dummy"] * targetcoHoldout$month_12_dummy+
-    regress$coefficients["targetcoSample$region_Northeast_dummy"] * targetcoHoldout$region_Northeast_dummy+
-    regress$coefficients["targetcoSample$region_Midwest_dummy"] * targetcoHoldout$region_Midwest_dummy+
-    regress$coefficients["targetcoSample$region_Hawaii_dummy"] * targetcoHoldout$region_Hawaii_dummy+
-    regress$coefficients["targetcoSample$region_South_dummy"] * targetcoHoldout$region_South_dummy+
-    regress$coefficients["targetcoSample$region_West_dummy"] * targetcoHoldout$region_West_dummy+
-    regress$coefficients["targetcoSample$region_Northeast_times_precip_dummy"] * targetcoHoldout$region_Northeast_times_precip_dummy+
-    regress$coefficients["targetcoSample$region_Midwest_times_precip_dummy"] * targetcoHoldout$region_Midwest_times_precip_dummy+
-    regress$coefficients["targetcoSample$region_Hawaii_times_precip_dummy"] * targetcoHoldout$region_Hawaii_times_precip_dummy+
-    regress$coefficients["targetcoSample$region_South_times_precip_dummy"] * targetcoHoldout$region_South_times_precip_dummy+
-    regress$coefficients["targetcoSample$region_West_times_precip_dummy"] * targetcoHoldout$region_West_times_precip_dummy+
-    regress$coefficients["targetcoSample$region_Northeast_times_temp_dummy"] * targetcoHoldout$region_Northeast_times_temp_dummy+
-    regress$coefficients["targetcoSample$region_Midwest_times_temp_dummy"] * targetcoHoldout$region_Midwest_times_temp_dummy+
-    regress$coefficients["targetcoSample$region_Hawaii_times_temp_dummy"] * targetcoHoldout$region_Hawaii_times_temp_dummy+
-    regress$coefficients["targetcoSample$region_South_times_temp_dummy"] * targetcoHoldout$region_South_times_temp_dummy+
-    regress$coefficients["targetcoSample$region_West_times_temp_dummy"] * targetcoHoldout$region_West_times_temp_dummy
+  regressCoeffs <- names(regress$coefficients)[2:length(names(regress$coefficients))]  
+  for (coeff in regressCoeffs){  
+    betaVal <- 1*regress$coefficients[coeff]
+    varname <- unlist(strsplit(coeff, "$", fixed=TRUE))[2]  
+    if (!is.na(betaVal)){     
+      targetcoHoldout$predictedSales = targetcoHoldout$predictedSales+ targetcoHoldout[,varname]* regress$coefficients[coeff]   
+    } else {
+      print(paste("Cannot get value for ", coeff))
+    }
+  }
 
-
-  
   targetcoHoldout$predictedSalesSquaredErrors = (targetcoHoldout$Sales - targetcoHoldout$predictedSales) ** 2
   mean_standard_error_holdout <- sqrt(sum(targetcoHoldout$predictedSalesSquaredErrors)/nrow(targetcoHoldout))
   print("Holdout Standard Error:")
