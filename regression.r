@@ -10,7 +10,7 @@ for (company in companies){
   targetco <- subset(company_data, Company==company)
   
   #filter out any rows with incomplete data.  This happens occasionally for some records
-  targetco = targetcoHoldout[complete.cases(targetcoHoldout$predictedSales),]
+  targetco = targetco[complete.cases(targetco),]
   
   #create sample set and holdout set.  Set the rand seed so the test is repeatable.
   set.seed(8675309)
